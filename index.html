@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Te Amo - Nayi Setzi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      font-family: 'Alex Brush', cursive;
+      color: #ff3399;
+      user-select: none;
+      position: relative;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+    }
+    #frase-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 90px;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      text-shadow: 0 0 25px #ff3399;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 1;
+      transition: opacity 1s ease-in-out;
+    }
+    #frase-text {
+      line-height: 1;
+    }
+    .emoji {
+      width: 90px;
+      height: 90px;
+      image-rendering: pixelated;
+    }
+    #audio-controls {
+      position: fixed;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 51, 153, 0.6);
+      padding: 10px 25px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-family: Arial, sans-serif;
+      user-select: none;
+      box-shadow: 0 0 10px rgba(255, 51, 153, 0.7);
+    }
+    #audio-controls button {
+      background: none;
+      border: none;
+      color: #ff3399;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: color 0.3s ease;
+    }
+    #audio-controls button:hover {
+      color: #ffa6d1;
+    }
+    #volume-container {
+      width: 100px;
+      height: 10px;
+      background: #333;
+      border-radius: 5px;
+      cursor: pointer;
+      position: relative;
+    }
+    #volume-fill {
+      height: 100%;
+      background: #ff3399;
+      border-radius: 5px 0 0 5px;
+      width: 50%; /* Default volume */
+      pointer-events: none;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+
+  <audio id="audio" preload="auto">
+    Tu navegador no soporta audio HTML5.
+  </audio>
+
+  <canvas id="matrix"></canvas>
+
+  <div id="frase-container">
+    <span id="frase-text">Nayara &lt;3</span>
+    <img id="emoji-img" class="emoji" style="display: none;" alt="emoji" />
+  </div>
+
+  <div id="audio-controls">
+    <button id="prev" title="Canción anterior">⏮️</button>
+    <button id="play-pause" title="Reproducir / Pausar">▶️</button>
+    <button id="next" title="Siguiente canción">⏭️</button>
+    <label for="volume" style="color:#ff3399;">Volumen:</label>
+    <div id="volume-container" title="Control de volumen">
+      <div id="volume-fill"></div>
+    </div>
+  </div>
+
+  <script>
+    const audio = document.getElementById('audio');
+    const playPauseBtn = document.getElementById('play-pause');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const volumeContainer = document.getElementById('volume-container');
+    const volumeFill = document.getElementById('volume-fill');
+
+    // Lista de canciones
+    const songs = [
+      "https://github.com/Negan7k/sweet-girl/raw/refs/heads/main/Chase%20Atlantic%20-%20Right%20Here.mp3",
+      "https://github.com/Negan7k/sweet-girl/raw/refs/heads/main/The%20Neighbourhood%20-%20Flawless.m4a",
+      "https://github.com/Negan7k/sweet-girl/raw/refs/heads/main/Lady%20Gaga,%20Bruno%20Mars%20-%20Die%20With%20A%20Smile.mp3",
+      "https://github.com/Negan7k/sweet-girl/raw/refs/heads/main/The%20Neighbourhood%20-%20A%20Little%20Death.mp3",
+      "https://github.com/Negan7k/sweet-girl/raw/refs/heads/main/Chase%20Atlantic%20-%20Consume.mp3",
+      "https://github.com/Negan7k/sweet-girl/raw/refs/heads/main/Chase%20Atlantic%20-%20Meddle%20About.mp3"
+    ];
+
+    let currentSongIndex = 0;
+
+    // Función para cargar canción
+    function loadSong(index) {
+      audio.src = songs[index];
+      audio.load();
+      audio.play().catch(() => {
+        // Puede que el autoplay sea bloqueado por navegador
+      });
+      updatePlayPauseBtn();
+    }
+
+    // Cambiar botón play/pause
+    function updatePlayPauseBtn() {
+      playPauseBtn.textContent = audio.paused ? '▶️' : '⏸️';
+    }
+
+    // Play/pause toggle
+    playPauseBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+      updatePlayPauseBtn();
+    });
+
+    // Botones next y prev
+    nextBtn.addEventListener('click', () => {
+      currentSongIndex = (currentSongIndex + 1) % songs.length;
+      loadSong(currentSongIndex);
+    });
+
+    prevBtn.addEventListener('click', () => {
+      currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+      loadSong(currentSongIndex);
+    });
+
+    // Auto siguiente canción al terminar
+    audio.addEventListener('ended', () => {
+      currentSongIndex = (currentSongIndex + 1) % songs.length;
+      loadSong(currentSongIndex);
+    });
+
+    // Volumen (inicial 0.5)
+    audio.volume = 0.5;
+    volumeFill.style.width = audio.volume * 100 + '%';
+
+    // Cambiar volumen al click en barra
+    volumeContainer.addEventListener('click', e => {
+      const rect = volumeContainer.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      let newVolume = clickX / rect.width;
+      if (newVolume < 0) newVolume = 0;
+      if (newVolume > 1) newVolume = 1;
+      audio.volume = newVolume;
+      volumeFill.style.width = newVolume * 100 + '%';
+    });
+
+    audio.addEventListener('volumechange', () => {
+      volumeFill.style.width = audio.volume * 100 + '%';
+    });
+
+    // Reproducir automáticamente al cargar la página
+    window.addEventListener('load', () => {
+      loadSong(currentSongIndex);
+    });
+
+    audio.addEventListener('play', updatePlayPauseBtn);
+    audio.addEventListener('pause', updatePlayPauseBtn);
+
+    // ------------------------------------------
+    // Código animación matrix y frases con emojis
+    const canvas = document.getElementById("matrix");
+    const ctx = canvas.getContext("2d");
+
+    function ajustarTamañoCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", ajustarTamañoCanvas);
+    ajustarTamañoCanvas();
+
+    const frases = [
+      { text: "Nayara <3" },
+      { text: "Eres mi todo", emoji: "https://em-content.zobj.net/thumbs/240/apple/325/ribbon_1f380.png" },
+      { text: "Sólo mía", emoji: "https://raw.githubusercontent.com/Negan7k/emoji-hosting/main/ios-18.4-3121.png" },
+      { text: "Contigo, siempre", emoji: "https://raw.githubusercontent.com/Negan7k/emoji-hosting/main/ios-18.4-2158.png" },
+      { text: "Te amo más que ayer", emoji: "https://em-content.zobj.net/thumbs/240/apple/325/red-heart_2764-fe0f.png" },
+      { text: "Mi corazón es tuyo" },
+      { text: "Mi personita favorita" },
+      { text: "Te adoro wapa", emoji: "https://raw.githubusercontent.com/Negan7k/emoji-hosting/main/ios-18.4-3867.png" },
+      { text: "Buenota", emoji: "https://raw.githubusercontent.com/Negan7k/emoji-hosting/main/ios-18.4-1492.png" },
+      { text: "No me cambies", emoji: "https://raw.githubusercontent.com/Negan7k/emoji-hosting/main/ios-18.4-1398.png" },
+      { text: "Mi reina preciozza", emoji: "https://em-content.zobj.net/thumbs/240/apple/325/crown_1f451.png" },
+      { text: "Solo tú y yo", emoji: "https://em-content.zobj.net/thumbs/240/apple/325/sparkling-heart_1f496.png" },
+      { text: "3 Babys ya sabes", emoji: "https://raw.githubusercontent.com/Negan7k/emoji-hosting/main/ios-18.4-18_17.png" }
+    ];
+
+    const fraseText = document.getElementById("frase-text");
+    const emojiImg = document.getElementById("emoji-img");
+    const fraseContainer = document.getElementById("frase-container");
+
+    let fraseIndex = 0;
+
+    function cambiarFrase() {
+      fraseContainer.style.opacity = 0;
+
+      setTimeout(() => {
+        const frase = frases[fraseIndex];
+
+        fraseText.textContent = frase.text;
+
+        if (frase.emoji) {
+          emojiImg.src = frase.emoji;
+          emojiImg.style.display = "inline-block";
+        } else {
+          emojiImg.style.display = "none";
+        }
+
+        fraseContainer.style.opacity = 1;
+        fraseIndex = (fraseIndex + 1) % frases.length;
+      }, 1000);
+    }
+
+    setTimeout(cambiarFrase, 6000);
+    setInterval(cambiarFrase, 6000);
+
+    // MATRIX ANIMATION
+    const mensaje = "TE AMO";
+    const fontSize = 30;
+    let columns = 0;
+    let drops = [];
+    const longitudColumna = 8;
+    let explosiones = [];
+    let estado = "alineado";
+    const tiempoAlineado = 2500;
+    const colorFijo = "#ff3399";
+
+    function initMatrix() {
+      columns = Math.floor(canvas.width / (fontSize * 3));
+      drops = Array.from({ length: columns }, () => Math.random() * -50);
+    }
+    initMatrix();
+
+    setTimeout(() => { estado = "caida"; }, tiempoAlineado);
+
+    function draw() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.shadowColor = colorFijo;
+      ctx.shadowBlur = 25;
+      ctx.fillStyle = colorFijo;
+      ctx.font = fontSize + "px monospace";
+
+      for (let i = 0; i < drops.length; i++) {
+        let x = estado === "alineado"
+          ? (canvas.width - columns * fontSize * 3) / 2 + i * fontSize * 3
+          : i * fontSize * 3;
+        const baseY = drops[i] * fontSize;
+
+        for (let j = 0; j < longitudColumna; j++) {
+          const y = baseY - j * fontSize;
+          if (y < canvas.height && y > 0) {
+            ctx.fillText(mensaje, x, y);
+          }
+        }
+
+        if (baseY > canvas.height && Math.random() > 0.975) {
+          drops[i] = Math.random() * -20;
+        }
+
+        drops[i] += 1;
+      }
+
+      for (let i = explosiones.length - 1; i >= 0; i--) {
+        const p = explosiones[i];
+        ctx.fillText(mensaje, p.x, p.y);
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) explosiones.splice(i, 1);
+      }
+
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+    }
+
+    canvas.addEventListener("click", (e) => {
+      for (let i = 0; i < 20; i++) {
+        explosiones.push({
+          x: e.clientX,
+          y: e.clientY,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.5) * 14,
+          life: 25 + Math.random() * 20
+        });
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      ajustarTamañoCanvas();
+      initMatrix();
+    });
+
+    function animate() {
+      draw();
+      requestAnimationFrame(animate);
+    }
+    animate();
+	window.addEventListener('click', () => {
+  	audio.play().catch(() => {
+  });
+}, { once: true });
+
+  </script>
+
+
+</body>
+</html>
